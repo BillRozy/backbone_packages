@@ -1,76 +1,61 @@
-// Models
-window.Wine = Backbone.Model.extend();
+var Book = Backbone.Model.extend({
 
-window.WineCollection = Backbone.Collection.extend({
-    model:Wine,
-    url:"../api/wines"
+  defaults: {
+    title: '',
+    pages: 0
+  },
+  initialize: function(){
+    console.log('This book has been initialized.');
+  }
+})
+
+var BookShelf = Backbone.Collection.extend({
+  model: Book
 });
 
 
-// Views
-window.WineListView = Backbone.View.extend({
+var book1 = new Book({title: 'Damask', pages: 47});
+var book2 = new Book();
 
-    tagName:'ul',
+var bookShelf = new BookShelf();
+bookShelf.add([book1, book2]);
 
-    initialize:function () {
-        this.model.bind("reset", this.render, this);
-    },
+console.log(JSON.stringify(book1));
+console.log(JSON.stringify(book2));
 
-    render:function (eventName) {
-        _.each(this.model.models, function (wine) {
-            $(this.el).append(new WineListItemView({model:wine}).render().el);
-        }, this);
-        return this;
-    }
+var BookView = Backbone.View.extend({
+  tagName: 'div',
 
+  className: 'singlebook',
+
+  template: _.template($('#item-template').html()),
+
+  events: {
+    'click div' : 'clicked'
+  },
+
+  initialize: function(options){
+    this.options = options || {};
+    this.collection.bind('change', _.bind(this.render, this));
+  },
+
+  render: function() {
+    let self = this;
+    this.$el.html('');
+    this.collection.forEach(function(model){
+      self.$el.html(self.$el.html() + self.template(model.attributes ));
+    });
+    return this;
+  },
+
+  clicked: function() {
+    // executed when todo label is double clicked
+    alert(this.$el + "clicked!");
+  }
 });
 
-window.WineListItemView = Backbone.View.extend({
+var bookView1 = new BookView({collection: bookShelf});
 
-    tagName:"li",
+console.log(bookView1.el); // logs <li></li>
 
-    template:_.template($('#tpl-wine-list-item').html()),
-
-    render:function (eventName) {
-        $(this.el).html(this.template(this.model.toJSON()));
-        return this;
-    }
-
-});
-
-window.WineView = Backbone.View.extend({
-
-    template:_.template($('#tpl-wine-details').html()),
-
-    render:function (eventName) {
-        $(this.el).html(this.template(this.model.toJSON()));
-        return this;
-    }
-
-});
-
-
-// Router
-var AppRouter = Backbone.Router.extend({
-
-    routes:{
-        "":"list",
-        "wines/:id":"wineDetails"
-    },
-
-    list:function () {
-        this.wineList = new WineCollection();
-        this.wineListView = new WineListView({model:this.wineList});
-        this.wineList.fetch();
-        $('#sidebar').html(this.wineListView.render().el);
-    },
-
-    wineDetails:function (id) {
-        this.wine = this.wineList.get(id);
-        this.wineView = new WineView({model:this.wine});
-        $('#content').html(this.wineView.render().el);
-    }
-});
-
-var app = new AppRouter();
-Backbone.history.start();
+$('#todo').append(bookView1.render().$el);
